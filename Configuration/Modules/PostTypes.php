@@ -38,7 +38,7 @@ class PostTypes extends Init implements IModule
                     $post_type['slug'] = Str::slug($post_type['singular']);
                 }
                 if (!array_key_exists('capabilities', $post_type) || !is_array(Arr::get($post_type, 'capabilities'))) {
-                    $post_type['capabilities'] = $this->capabilities($post_type['slug']);
+                    $args['capabilities'] = $this->capabilities($post_type['slug']);
                 }
                 register_post_type(
                     $post_type['slug'],
@@ -60,6 +60,7 @@ class PostTypes extends Init implements IModule
             'edit_post'          => sprintf('edit_%s', Str::singular($slug)),
             'read_post'          => sprintf('read_%s', Str::singular($slug)),
             'delete_post'        => sprintf('delete_%s', Str::singular($slug)),
+            'delete_posts'       => sprintf('delete_%s', Str::plural($slug)),
             'edit_posts'         => sprintf('edit_%s', Str::plural($slug)),
             'edit_others_posts'  => sprintf('edit_others_%s', Str::plural($slug)),
             'publish_posts'      => sprintf('publish_%s', Str::plural($slug)),

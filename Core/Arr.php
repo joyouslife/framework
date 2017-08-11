@@ -221,7 +221,7 @@ class Arr
     public static function flattenWithKeys($array, $prefix = '')
     {
         $result = array();
-        foreach ($array as $key => $value) {
+        foreach ((array) $array as $key => $value) {
             if (is_array($value)) {
                 $result = $result + self::flattenWithKeys($value, $prefix . $key . '_');
             } else {
@@ -291,6 +291,14 @@ class Arr
 
         if (is_null($key)) {
             return $array;
+        }
+
+        if (is_array($key)) {
+            $ret = [];
+            foreach ($key as $k) {
+                $ret[ $k ] = self::get($array, $k, $default);
+            }
+            return $ret;
         }
 
         if (static::exists($array, $key)) {
@@ -696,5 +704,25 @@ class Arr
             $position--;
         }
         return array_slice($array, $position+1, count($array));
+    }
+
+    /**
+     * Rapped your array
+     *
+     * @param  array  $array
+     * @param  integer $target_sum
+     * @return array
+     */
+    public static function rapped($array, $target_sum = 0)
+    {
+        $sum = 0;
+        $rapped = array();
+        foreach ($array as $key => $value) {
+            if ($sum < $target_sum) {
+                $sum+= (float) $value;
+                $rapped[ $key ] = $value;
+            }
+        }
+        return $rapped;
     }
 }

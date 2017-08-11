@@ -2,6 +2,7 @@
 namespace lolita;
 
 use \lolita\LolitaFramework\Core\Url;
+use \lolita\LolitaFramework\Core\Ref;
 
 /**
  * Lolita Framework singlton class
@@ -61,9 +62,15 @@ class LolitaFramework
         self::define('NS', '\\');
         self::define('SITE_URL', get_bloginfo('url'));
         self::define('AJAX_URL', admin_url('admin-ajax.php'));
-        if (!function_exists('wp_create_nonce')) {
-            require_once(ABSPATH . DS . 'wp-includes' . DS . 'pluggable.php');
-        }
+        add_action('init', [$this, 'initConstants']);
+    }
+
+    /**
+     * Init constants
+     * @return void
+     */
+    public function initConstants()
+    {
         self::define('LF_NONCE', wp_create_nonce('Lolita Framework'));
     }
 
@@ -164,8 +171,7 @@ class LolitaFramework
     public static function getClassPath($class)
     {
         $class_path = str_replace('\\', DS, $class);
-        $current_class_path = str_replace('\\', DS, __CLASS__);
-        $class_path = str_replace($current_class_path . DS, dirname(__FILE__) . DS, $class_path);
+        $class_path = str_replace(__NAMESPACE__ . DS, dirname(__DIR__) . DS, $class_path);
         return $class_path . '.php';
     }
 
@@ -184,11 +190,21 @@ class LolitaFramework
      * @author Guriev Eugen <gurievcreative@gmail.com>
      * @param string $module_name Module / Folder name.
      */
-    public function addModule($module_name)
+    public function addModule($module_name, $params = array())
     {
-        if (!property_exists($this, $module_name)) {
-            $class = __CLASS__ . NS . $module_name . NS . $module_name;
-            $this->$module_name = new $class();
+        $class = __CLASS__ . NS . $module_name . NS . $module_name;
+        if (!$params) {
+            $module = new $class();
+        } else {
+            $module = Ref::create($class, $params);
+        }
+        if (property_exists($this, $module_name)) {
+            if (!is_array($this->$module_name)) {
+                $this->$module_name = [];
+            }
+            array_push($this->$module_name, $module);
+        } else {
+            $this->$module_name = [$module];
         }
     }
 }

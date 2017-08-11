@@ -1,6 +1,6 @@
 <?php
 
-namespace lolita\LolitaFramework\Core\Decorators;
+namespace lolita\LolitaFramework\Core;
 
 use \lolita\LolitaFramework\Core\Str;
 use \lolita\LolitaFramework\Core\Arr;
@@ -198,8 +198,8 @@ class Term
                 wp_cache_add($term_id, $_term, 'terms');
             }
         }
-
-        $term_obj = new Term($_term);
+        $cls = get_called_class();
+        $term_obj = new $cls($_term);
         $term_obj->filter($term_obj->filter);
 
         return $term_obj;
@@ -279,6 +279,19 @@ class Term
     }
 
     /**
+     * Update meta
+     *
+     * @param  string $key
+     * @param  mixed $value
+     * @return Term instance
+     */
+    public function update($key, $value)
+    {
+        update_term_meta($this->term_id, $key, $value);
+        return $this;
+    }
+
+    /**
      * Get term link
      *
      * @return string
@@ -312,6 +325,16 @@ class Term
     }
 
     /**
+     * Terms
+     * @param  array $args
+     * @return array
+     */
+    public static function terms($args)
+    {
+        return self::sanitize(get_terms($args));
+    }
+
+    /**
      * Sanitize post / posts
      *
      * @param  mixed $data
@@ -319,11 +342,12 @@ class Term
      */
     public static function sanitize($data)
     {
-        if ($data instanceof Term) {
+        $cls = get_called_class();
+        if ($data instanceof $cls) {
             return $data;
         }
         if ($data instanceof WP_Term) {
-            return new Term($data);
+            return new $cls($data);
         }
 
         if (is_array($data)) {
@@ -343,5 +367,14 @@ class Term
     public static function is($obj)
     {
         return ($obj instanceof WP_Term) || ($obj instanceof self);
+    }
+
+    /**
+     * Suicide term
+     * @return void
+     */
+    public function suicide()
+    {
+        return wp_delete_term($this->term_id, $this->taxonomy, ['force_default' => true]);
     }
 }

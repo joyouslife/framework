@@ -1,10 +1,11 @@
 <?php
 
-namespace lolita\LolitaFramework\Core\Decorators;
+namespace lolita\LolitaFramework\Core;
 
 use \lolita\LolitaFramework\Core\Str;
 use \lolita\LolitaFramework\Core\Loc;
 use \WP_Post;
+use \stdClass;
 
 class Post
 {
@@ -14,6 +15,12 @@ class Post
      * @var int
      */
     public $ID;
+
+    /**
+     * Post blog id
+     * @var int
+     */
+    public $blog_id = 0;
 
     /**
      * ID of post author.
@@ -216,10 +223,8 @@ class Post
         }
 
         $_post = wp_cache_get($post_id, 'posts');
-
         if (!$_post) {
             $_post = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->posts WHERE ID = %d LIMIT 1", $post_id));
-
             if (!$_post) {
                 return false;
             }
@@ -230,7 +235,18 @@ class Post
             $_post = sanitize_post($_post, 'raw');
         }
 
-        return new Post($_post);
+        $cls = self::whoAmI();
+        return new $cls($_post);
+    }
+
+    /**
+     * Get called class name
+     *
+     * @return string
+     */
+    public static function whoAmI()
+    {
+        return get_called_class();
     }
 
     /**
@@ -241,7 +257,13 @@ class Post
      */
     public static function posts(array $args = array())
     {
-        return self::sanitize(get_posts($args));
+        $key = 'posts' . md5(json_encode($args));
+        $res = wp_cache_get($key);
+        if (false === $res) {
+            $res = self::sanitize(get_posts($args));
+            wp_cache_set($key, $res);
+        }
+        return $res;
     }
 
     /**
@@ -256,7 +278,8 @@ class Post
             return $data;
         }
         if ($data instanceof WP_Post) {
-            return new self($data);
+            $cls = get_called_class();
+            return new $cls($data);
         }
 
         if (is_array($data)) {
@@ -274,9 +297,27 @@ class Post
      */
     public function __construct($post)
     {
-        foreach (get_object_vars($post) as $key => $value) {
-            $this->$key = $value;
+        if ($post instanceof WP_Post || $post instanceof stdClass || $post instanceof self) {
+            foreach (get_object_vars($post) as $key => $value) {
+                $this->$key = $value;
+            }
         }
+        if (!$this->blog_id) {
+            $this->blog_id = get_current_blog_id();
+        }
+    }
+
+    /**
+     * Determine whether the post exists in the database.
+     *
+     * @since 3.4.0
+     * @access public
+     *
+     * @return bool True if post exists in the database, false if not.
+     */
+    public function exists()
+    {
+        return !empty($this->ID);
     }
 
     /**
@@ -468,7 +509,7 @@ class Post
     }
 
     /**
-     * Get the featured image as a TimberImage
+     * Get the featured image
      *
      * @return Image instance or null
      */
@@ -482,6 +523,15 @@ class Post
             $this->img = new Img((int) $this->ID);
         }
         return $this->img;
+    }
+
+    /**
+     * Has post thumbnail
+     * @return boolean
+     */
+    public function hasThumbnail()
+    {
+        return has_post_thumbnail($this->ID);
     }
 
     /**
@@ -669,5 +719,14 @@ class Post
             $return[] = new self($p);
         }
         return $return;
+    }
+
+    /**
+     * Suicide
+     * @return void
+     */
+    public function suicide()
+    {
+        return wp_delete_post($this->ID, true);
     }
 }

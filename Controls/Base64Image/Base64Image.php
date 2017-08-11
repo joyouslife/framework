@@ -1,10 +1,10 @@
 <?php
-namespace lolita\LolitaFramework\Controls\Text;
+namespace lolita\LolitaFramework\Controls\Base64Image;
 
 use \lolita\LolitaFramework\Controls\Control;
 use \lolita\LolitaFramework\Core\Arr;
 
-class Text extends Control
+class Base64Image extends Control
 {
     /**
      * Render control
@@ -19,14 +19,11 @@ class Text extends Control
         }
         $this->setAttributes(
             array_merge(
+                $this->getAttributes(),
                 array(
                     'name'                        => $this->getName(),
-                    'id'                          => $this->getId(),
-                    'value'                       => esc_attr($this->getValue()),
-                    'type'                        => 'text',
                     'data-customize-setting-link' => $this->getName(),
-                ),
-                $this->getAttributes()
+                )
             )
         );
         return parent::render();
